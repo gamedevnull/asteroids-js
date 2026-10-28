@@ -1,5 +1,9 @@
 import {GameObject} from './GameObjects.js';
 
+export function isMobileDevice(): boolean {
+    return window.matchMedia('(pointer: coarse)').matches;
+}
+
 export class Size {
     width: number;
     height: number;
@@ -88,6 +92,16 @@ export class SoundEffect {
         this.loadSound();
     }
 
+    static fixContext(): void {
+        if (SoundEffect.audioContext.state !== 'running') {
+            void SoundEffect.audioContext.resume();
+        }
+    }
+
+    private static isContextRunning(): boolean {
+        return SoundEffect.audioContext.state === 'running';
+    }
+
     public setVolume(volume: number): void {
         if (!this.mute) {
             this.gainNode.gain.value = volume;
@@ -110,14 +124,11 @@ export class SoundEffect {
         }
     }
 
-    public async play(): Promise<void> {
-        if (this.mute || !this.buffer) {
+    public play(): void {
+        if (this.mute || !this.buffer || !SoundEffect.isContextRunning()) {
             return;
         }
         try {
-            if (SoundEffect.audioContext.state === 'suspended') {
-                await SoundEffect.audioContext.resume();
-            }
             const source = SoundEffect.audioContext.createBufferSource();
             source.buffer = this.buffer;
             source.connect(this.gainNode);

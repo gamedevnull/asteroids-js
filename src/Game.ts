@@ -5,7 +5,7 @@ import {Particle} from './GameObjects.js';
 import {Explosion} from './GameObjects.js';
 import {Bullet} from './GameObjects.js';
 import {StateManager} from './GameStates.js';
-import {SoundEffect} from './Commons.js';
+import {isMobileDevice, SoundEffect} from './Commons.js';
 import {CollisionManager} from './Commons.js';
 import {ShootingComponent} from './GameControlls.js';
 import {Viewport} from './GameControlls.js';
@@ -43,7 +43,7 @@ export class Game {
     constructor(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
         this.isDebugEnabled = false;
         this.isGraphicsEnabled = true;
-        this.isSoundEnabled = true;
+        this.isSoundEnabled = !isMobileDevice();
         this.isAmmoOnTheWay = false;
         this.ctx = ctx;
         this.canvas = canvas;
@@ -90,6 +90,12 @@ export class Game {
         this.setupCollisionCallbacks();
         this.spawnEnemy();
 
+        // Safari audio fix
+        window.addEventListener('keydown', () => SoundEffect.fixContext());
+        window.addEventListener('touchend', () => SoundEffect.fixContext());
+        window.addEventListener('pointerup', () => SoundEffect.fixContext());
+        this.updateSoundIcon();
+
         document.getElementById('sound-toggle-icon')?.addEventListener('touchend', () => {
             this.toggleSound();
         });
@@ -103,14 +109,19 @@ export class Game {
     }
 
     toggleSound(): void {
-        const soundOnPath = document.getElementById('sound-on');
-        const soundOffPath = document.getElementById('sound-off');
-
         this.isSoundEnabled = !this.isSoundEnabled;
+        SoundEffect.fixContext();
 
         this.explosionSound.setSoundEnabled(this.isSoundEnabled);
         this.shootingComponent.shootingSound.setSoundEnabled(this.isSoundEnabled);
         this.thrustSound.setSoundEnabled(this.isSoundEnabled);
+
+        this.updateSoundIcon();
+    }
+
+    private updateSoundIcon(): void {
+        const soundOnPath = document.getElementById('sound-on');
+        const soundOffPath = document.getElementById('sound-off');
 
         if (soundOnPath && soundOffPath) {
             if (this.isSoundEnabled) {
